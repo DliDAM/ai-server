@@ -1,0 +1,40 @@
+<html>
+        <head>
+            <title>WebSocket Audio</title>
+        </head>
+        <body>
+            <h1>WebSocket Audio</h1>
+            <button onclick="startRecording()">Start Recording</button>
+            <button onclick="stopRecording()">Stop Recording</button>
+            <script>
+                let socket = new WebSocket('ws://localhost:8000/audio/ws');
+                let mediaRecorder;
+                let audioChunks = [];
+
+                socket.onopen = () => {
+                    console.log('WebSocket is connected.');
+                };
+
+                function startRecording() {
+                    navigator.mediaDevices.getUserMedia({ audio: true })
+                        .then(stream => {
+                            mediaRecorder = new MediaRecorder(stream);
+                            mediaRecorder.ondataavailable = event => {
+                                audioChunks.push(event.data);
+                            };
+                            mediaRecorder.onstop = () => {
+                                const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
+                                socket.send(audioBlob);
+                                audioChunks = [];
+                            };
+                            mediaRecorder.start();
+                        })
+                        .catch(error => console.error('Error accessing audio devices.', error));
+                }
+
+                function stopRecording() {
+                    mediaRecorder.stop();
+                }
+            </script>
+        </body>
+    </html>

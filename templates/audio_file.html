@@ -1,0 +1,39 @@
+<html>
+        <head>
+            <title>WebSocket File Upload</title>
+        </head>
+        <body>
+            <h1>Upload Audio File via WebSocket</h1>
+            <input type="file" id="fileInput" accept="audio/*">
+            <button onclick="uploadFile()">Upload</button>
+            <p id="status"></p>
+            <script>
+                let socket = new WebSocket('ws://localhost:8000/audio/ws');
+                let statusElement = document.getElementById('status');
+
+                socket.onopen = () => {
+                    console.log('WebSocket is connected.');
+                };
+
+                socket.onmessage = (event) => {
+                    statusElement.innerText = event.data;
+                };
+
+                function uploadFile() {
+                    const fileInput = document.getElementById('fileInput');
+                    const file = fileInput.files[0];
+                    
+                    if (file) {
+                        const reader = new FileReader();
+                        reader.onload = (event) => {
+                            const arrayBuffer = event.target.result;
+                            socket.send(arrayBuffer);
+                        };
+                        reader.readAsArrayBuffer(file);
+                    } else {
+                        alert('Please select a file to upload.');
+                    }
+                }
+            </script>
+        </body>
+    </html>
