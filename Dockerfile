@@ -8,4 +8,8 @@ RUN pip install --no-cache-dir --upgrade -r /code/requirements.txt
 
 COPY ./routers  /code/routers
 
-CMD [ "uvicorn", "main:app","--proxy-headers", "--host", "0.0.0.0", "--port","8080" ]
+COPY ./templates /code/templates
+
+COPY ./main.py /code/main.py
+
+CMD [ "uvicorn", "main:app","--proxy-headers", "--host", "0.0.0.0", "--port","80" ]
