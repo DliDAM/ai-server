@@ -10,15 +10,6 @@ import wave # <- 임시로 import하는거. 추후 삭제 필요.
 
 router = APIRouter()
 
-# Thread safe Queue for passing data from the threaded recording callback.
-text_queue = Queue()
-
-# Thread safe Queue for passing result from STT Thread
-result_queue = Queue()
-
-# EventObject for Stopping Thread
-stop_event = threading.Event()
-
 async def read_wav(file_path):
     with wave.open(file_path, 'rb') as wav_file:
         frames = wav_file.readframes(wav_file.getnframes())
@@ -59,50 +50,7 @@ async def process_thread(websocket: WebSocket):
     
     print("[ProcessTask] Process Task Destroyed")
 
-async def websocket_task(websocket: WebSocket):
-    # Load Model Here 
-    device = 'cuda'
-    print("[WebSocketTask]-[****] Model Loaded Successfully with", device)
 
-    # Accept WebSocket
-    #connection_uuid = await websocket.receive_bytes()
-    #print("[WebSocketTask] Connection [" + connection_uuid + "] Accepted")
-
-    # Execute TTS Thread until WebSocket Disconnected
-    ttsThread = threading.Thread(target=textToSpeech, args=stop_event)
-    ttsThread.start()
-
-    processTask = asyncio.create_task(process_thread(websocket))
-
-    # Receive Text
-    try:
-        while True:
-            text_data = await websocket.receive_text()
-            text_queue.put(text_data)
-
-            # Sleep for other async functions
-            await asyncio.sleep(0)
-
-    except Exception as e:
-        print(f"[WebSocketTask] WebSocket error: {e}")
-    finally:
-        stop_event.set()
-        ttsThread.join()
-        processTask.cancel()
-
-        # clear stop_event for next Socket Connection
-        stop_event.clear()
-
-        while not text_queue.empty():
-            text_queue.get()
-
-        while not result_queue.empty():
-            result_queue.get()
-
-        if websocket.client_state.name != "DISCONNECTED":
-            await websocket.close()
-
-        print("[WebSocketTask] Connection Closed")
 
 #======= WebSocket ========#
 @router.websocket("/tts/ws")
@@ -110,8 +58,17 @@ async def websocket_endpoint(websocket: WebSocket):
     print("Configuring BE Socket")
     await websocket.accept()
     print("BE Socket Accepted")
-    
-    await asyncio.create_task(websocket_task(websocket))
+    try:
+        while True:
+            data = await websocket.receive_text()
+            print("data:\n",data)
+            processed_result = read_wav("../received_audio.wav")
+            await websocket.send_bytes(processed_result)
+    except Exception as e:
+        print("Exception as {e}")
+    finally:
+        print("WebSocket connection closed.")
+
 
 
 @router.websocket("/ws")
