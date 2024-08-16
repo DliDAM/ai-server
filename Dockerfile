@@ -8,6 +8,8 @@ RUN pip install --no-cache-dir --upgrade -r /code/requirements.txt
 
 COPY ./routers  /code/routers
 
+COPY ./data /code/data
+
 COPY ./templates /code/templates
 
 COPY ./main.py /code/main.py

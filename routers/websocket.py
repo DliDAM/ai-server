@@ -154,15 +154,15 @@ async def websocket_tts_test_endpoint(websocket: WebSocket):
         while True:
             data = await websocket.receive_text()
             print(f"Received text data: {data}")
-            audio_file_path = "../received_audio.wav"
+            audio_file_path = "./data/received_audio.wav"
             if os.path.exists(audio_file_path):
                     with open(audio_file_path, "rb") as audio_file:
                         while chunk := audio_file.read(1024):
                             await websocket.send_bytes(chunk)
             else:
                     await websocket.send_text("Audio file not found.")
-            processed_result = read_wav(audio_file_path)
-            await websocket.send_bytes(processed_result)
+            #rocessed_result = read_wav(audio_file_path)
+            #await websocket.send_bytes(processed_result)
     except Exception as e:
         print("Exception as {e}")
     finally:
