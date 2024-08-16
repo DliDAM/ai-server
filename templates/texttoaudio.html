@@ -1,0 +1,40 @@
+"""
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>WebSocket Audio Stream</title>
+    </head>
+    <body>
+        <h1>WebSocket Audio Stream</h1>
+        <button onclick="connectWebSocket()">Connect WebSocket</button>
+        <script>
+            let socket;
+
+            function connectWebSocket() {
+                socket = new WebSocket("ws://localhost:8000/ws");
+                socket.onopen = function(event) {
+                    console.log("Connected to WebSocket server.");
+                    socket.send("start");
+                };
+
+                socket.onmessage = function(event) {
+                    console.log("Received audio data:", event.data);
+                    // Blob으로 변환하여 오디오 재생
+                    let audioBlob = new Blob([event.data], { type: 'audio/wav' });
+                    let audioUrl = URL.createObjectURL(audioBlob);
+                    let audio = new Audio(audioUrl);
+                    audio.play();
+                };
+
+                socket.onclose = function(event) {
+                    console.log("Disconnected from WebSocket server.");
+                };
+
+                socket.onerror = function(error) {
+                    console.log("WebSocket error:", error);
+                };
+            }
+        </script>
+    </body>
+</html>
+"""

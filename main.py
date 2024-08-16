@@ -9,9 +9,10 @@ app.include_router(websocket.router)
 path = './templates/index.html'
 audio_path = './templates/audio.html'
 audio_file_path = './templates/audio_file.html'
+text_to_audio_path = './templates/texttoaudio.html'
 @app.get("/")
 async def get():
-    return FileResponse(audio_file_path)
+    return FileResponse(text_to_audio_path)
 
 @app.get("/items/{item_id}")
 def read_item(item_id : int, q:Union[str, None] = None):

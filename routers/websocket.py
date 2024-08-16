@@ -1,5 +1,6 @@
 from fastapi import APIRouter, WebSocket
 import asyncio
+import os
 import uuid
 import json
 from queue import Queue
@@ -106,7 +107,7 @@ async def websocket_task(websocket: WebSocket):
 
 #======= WebSocket ========#
 @router.websocket("/tts/ws")
-async def websocket_endpoint(websocket: WebSocket):
+async def tts_endpoint(websocket: WebSocket):
     print("Configuring BE Socket")
     await websocket.accept()
     print("BE Socket Accepted")
@@ -115,7 +116,7 @@ async def websocket_endpoint(websocket: WebSocket):
 
 
 @router.websocket("/ws")
-async def websocket_endpoint(websocket: WebSocket):
+async def websocket_test_endpoint(websocket: WebSocket):
     print("Configuring BE Socket")
     await websocket.accept()
     print("BE Socket Accepted")
@@ -125,7 +126,7 @@ async def websocket_endpoint(websocket: WebSocket):
         await websocket.send_text(f"Echo: {data}")
 
 @router.websocket("/audio/ws")
-async def websocket_endpoint(websocket: WebSocket):
+async def websocket_audio_test_endpoint(websocket: WebSocket):
     await websocket.accept()
     print("WebSocket connection accepted.")
     
@@ -145,15 +146,22 @@ async def websocket_endpoint(websocket: WebSocket):
 
 #======= WebSocket ========#
 @router.websocket("/tts")
-async def websocket_endpoint(websocket: WebSocket):
+async def websocket_tts_test_endpoint(websocket: WebSocket):
     print("Configuring BE Socket")
     await websocket.accept()
     print("BE Socket Accepted")
     try:
         while True:
             data = await websocket.receive_text()
-            print("data:\n",data)
-            processed_result = read_wav("../received_audio.wav")
+            print(f"Received text data: {data}")
+            audio_file_path = "../received_audio.wav"
+            if os.path.exists(audio_file_path):
+                    with open(audio_file_path, "rb") as audio_file:
+                        while chunk := audio_file.read(1024):
+                            await websocket.send_bytes(chunk)
+            else:
+                    await websocket.send_text("Audio file not found.")
+            processed_result = read_wav(audio_file_path)
             await websocket.send_bytes(processed_result)
     except Exception as e:
         print("Exception as {e}")
