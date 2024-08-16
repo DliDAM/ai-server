@@ -142,3 +142,20 @@ async def websocket_endpoint(websocket: WebSocket):
         print("Error:", e)
     finally:
         print("WebSocket connection closed.")
+
+#======= WebSocket ========#
+@router.websocket("/tts")
+async def websocket_endpoint(websocket: WebSocket):
+    print("Configuring BE Socket")
+    await websocket.accept()
+    print("BE Socket Accepted")
+    try:
+        while True:
+            data = await websocket.receive_text()
+            print("data:\n",data)
+            processed_result = read_wav("../received_audio.wav")
+            await websocket.send_bytes(processed_result)
+    except Exception as e:
+        print("Exception as {e}")
+    finally:
+        print("WebSocket connection closed.")
