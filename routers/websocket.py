@@ -20,10 +20,10 @@ result_queue = Queue()
 # EventObject for Stopping Thread
 stop_event = threading.Event()
 
-async def read_wav(file_path):
+def read_wav(file_path):
     with wave.open(file_path, 'rb') as wav_file:
         frames = wav_file.readframes(wav_file.getnframes())
-    return frames
+    return 
 
 async def textToSpeech(stop_event):
     print("[TTSThread] TTS Thread Executed")
@@ -52,8 +52,8 @@ async def process_thread(websocket: WebSocket):
         try:
             if not result_queue.empty():
                 audio_result = result_queue.get()
-                #audio_id = str(uuid.uuid4())
-                await websocket.send(audio_result)
+                while chunk := audio_result.read(1024):
+                    await websocket.send_bytes(chunk)
                 
         except Exception as e:
             print(f"[ProcessTask] Error : {e}")
@@ -71,7 +71,8 @@ async def websocket_task(websocket: WebSocket):
     #print("[WebSocketTask] Connection [" + connection_uuid + "] Accepted")
 
     # Execute TTS Thread until WebSocket Disconnected
-    ttsThread = threading.Thread(target=textToSpeech, args=stop_event)
+    
+    ttsThread = threading.Thread(target=textToSpeech, args=(stop_event,))
     ttsThread.start()
 
     processTask = asyncio.create_task(process_thread(websocket))
@@ -156,14 +157,14 @@ async def websocket_tts_test_endpoint(websocket: WebSocket):
             print(f"Received text data: {data}")
             audio_file_path = "./data/received_audio.wav"
             if os.path.exists(audio_file_path):
-                    with open(audio_file_path, "rb") as audio_file:
-                        while chunk := audio_file.read(1024):
-                            await websocket.send_bytes(chunk)
+                with open(audio_file_path, "rb") as audio_file:
+                    while chunk := audio_file.read(1024):
+                        await websocket.send_bytes(chunk)
+                    #processed_result = read_wav(audio_file_path)
+                    #await websocket.send_bytes(processed_result)
             else:
                     await websocket.send_text("Audio file not found.")
-            #rocessed_result = read_wav(audio_file_path)
-            #await websocket.send_bytes(processed_result)
     except Exception as e:
-        print("Exception as {e}")
+        print("Exception as",e)
     finally:
         print("WebSocket connection closed.")
