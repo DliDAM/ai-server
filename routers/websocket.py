@@ -115,7 +115,6 @@ async def tts_endpoint(websocket: WebSocket):
     
     await asyncio.create_task(websocket_task(websocket))
 
-
 @router.websocket("/ws")
 async def websocket_test_endpoint(websocket: WebSocket):
     print("Configuring BE Socket")
