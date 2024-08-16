@@ -34,7 +34,8 @@ async def textToSpeech(stop_event):
             now = datetime.utcnow()
             # pop text from the queue.
             if not text_queue.empty():
-                processed_result = read_wav("../received_audio.wav")
+                audio_file_path = "./data/received_audio.wav"
+                processed_result = read_wav(audio_file_path)
                 if processed_result != None:
                     result_queue.put(processed_result)
 
