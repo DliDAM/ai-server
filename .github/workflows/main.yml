@@ -49,6 +49,6 @@ jobs:
           docker pull ${{ secrets.DOCKER_USERNAME }}/ai-container:latest
           docker stop ai-container || true
           docker rm ai-container || true
-          docker run -d --name ai-container -p 80:80 ${{ secrets.DOCKER_USERNAME }}/ai-container:latest
+          docker run -d --name ai-container -p 8000:80 ${{ secrets.DOCKER_USERNAME }}/ai-container:latest
         EOF
 
