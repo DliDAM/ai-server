@@ -1,4 +1,4 @@
-from fastapi import APIRouter, WebSocket
+from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 import asyncio
 import os
 import uuid
@@ -7,6 +7,7 @@ from queue import Queue
 from datetime import datetime, timedelta
 from time import sleep
 import threading
+from typing import List
 import wave # <- 임시로 import하는거. 추후 삭제 필요.
 
 router = APIRouter()
@@ -20,6 +21,42 @@ result_queue = Queue()
 # EventObject for Stopping Thread
 stop_event = threading.Event()
 
+# == new project 08/23 == #
+async def process_tts(text: str) -> bytes:
+    # TTS 처리 (여기서는 단순히 바이너리 데이터를 반환하는 예시)
+    # 실제로는 TTS 엔진을 사용하여 음성 데이터를 생성
+    await asyncio.sleep(1)  # TTS 처리 시간 시뮬레이션
+    return b"dummy binary audio data"  # 추후 실제 음성 데이터로 대체
+
+@router.websocket("/ws/new")
+async def websocket_TTS(websocket: WebSocket):
+    await websocket.accept()
+    try:
+        # Worker 코루틴을 별도로 실행하여 Queue 처리
+        asyncio.create_task(worker(websocket))
+
+        while True:
+            data = await websocket.receive_text()
+            words = data.split()
+
+            chunk_size = 7 # 이 부분은 성능에 따라서 변경 가능
+            chunks = [words[i:i+chunk_size] for i in range(0,len(words), chunk_size)]
+            for chunk in chunks:
+                text_queue.put(chunk)
+
+    except WebSocketDisconnect:
+        print("WebSocket connection closed")
+
+# Queue를 처리하는 작업자 함수
+async def worker(websocket : WebSocket):
+    while True:
+        if not text_queue.empty():
+            text = text_queue.get()
+            audio_data = await process_tts(text)
+            await websocket.send_bytes(audio_data)
+        await asyncio.sleep(0.1)  # Queue가 비어있는지 확인하는 주기
+
+# ======= #
 def read_wav(file_path):
     with wave.open(file_path, 'rb') as wav_file:
         frames = wav_file.readframes(wav_file.getnframes())

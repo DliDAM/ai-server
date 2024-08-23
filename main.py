@@ -10,6 +10,7 @@ path = './templates/index.html'
 audio_path = './templates/audio.html'
 audio_file_path = './templates/audio_file.html'
 text_to_audio_path = './templates/texttoaudio.html'
+
 @app.get("/")
 async def get():
     return FileResponse(text_to_audio_path)
