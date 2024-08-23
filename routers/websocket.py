@@ -22,7 +22,7 @@ result_queue = Queue()
 # EventObject for Stopping Thread
 stop_event = threading.Event()
 
-# == new project 08/23 == #
+# ======================== new project 08/23 ======================== #
 # 로그 확인용 <- 추후 삭제
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("websocket")
@@ -46,7 +46,7 @@ async def websocket_TTS(websocket: WebSocket):
             data = await websocket.receive_text()
             logger.info(f"Received message: {data}")
             words = data.split()
-
+            
             chunk_size = 7 # 이 부분은 성능에 따라서 변경 가능
             chunks = [words[i:i+chunk_size] for i in range(0,len(words), chunk_size)]
             for chunk in chunks:
@@ -66,7 +66,7 @@ async def worker(websocket : WebSocket):
             logger.info("----output-----")
         await asyncio.sleep(0.1)  # Queue가 비어있는지 확인하는 주기
 
-# ======= #
+# ================================================================================================ #
 def read_wav(file_path):
     with wave.open(file_path, 'rb') as wav_file:
         frames = wav_file.readframes(wav_file.getnframes())
