@@ -1,0 +1,15 @@
+version: '3.8'
+
+services:
+  ai-server:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: ai-container
+    ports:
+      - "80:80"
+    volumes:
+      - .:/code
+    environment:
+      - ENVIRONMENT=production
+

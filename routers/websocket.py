@@ -8,6 +8,7 @@ from datetime import datetime, timedelta
 from time import sleep
 import threading
 from typing import List
+import logging
 import wave # <- 임시로 import하는거. 추후 삭제 필요.
 
 router = APIRouter()
@@ -22,10 +23,16 @@ result_queue = Queue()
 stop_event = threading.Event()
 
 # == new project 08/23 == #
+# 로그 확인용 <- 추후 삭제
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger("websocket")
+
 async def process_tts(text: str) -> bytes:
     # TTS 처리 (여기서는 단순히 바이너리 데이터를 반환하는 예시)
     # 실제로는 TTS 엔진을 사용하여 음성 데이터를 생성
     await asyncio.sleep(1)  # TTS 처리 시간 시뮬레이션
+    response = "dummy binary audio data"
+    logger.info(f"Sending message: {response}")
     return b"dummy binary audio data"  # 추후 실제 음성 데이터로 대체
 
 @router.websocket("/ws/new")
@@ -37,6 +44,7 @@ async def websocket_TTS(websocket: WebSocket):
 
         while True:
             data = await websocket.receive_text()
+            logger.info(f"Received message: {data}")
             words = data.split()
 
             chunk_size = 7 # 이 부분은 성능에 따라서 변경 가능
