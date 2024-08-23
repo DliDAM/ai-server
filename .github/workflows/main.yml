@@ -35,20 +35,20 @@ jobs:
         flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
 
     - name: Build Docker image
-      run: docker build . --file Dockerfile --tag fastapi_app:latest
+      run: docker build . --file Dockerfile --tag ai-container:latest
 
     - name: Push Docker image to Docker Hub
       run: |
         echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
-        docker tag fastapi_app:latest ${{ secrets.DOCKER_USERNAME }}/fastapi_app:latest
-        docker push ${{ secrets.DOCKER_USERNAME }}/fastapi_app:latest
+        docker tag ai-container:latest ${{ secrets.DOCKER_USERNAME }}/ai-container:latest
+        docker push ${{ secrets.DOCKER_USERNAME }}/ai-container:latest
 
     - name: Deploy to server
       run: |
         ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} << 'EOF'
-          docker pull ${{ secrets.DOCKER_USERNAME }}/fastapi_app:latest
-          docker stop fastapi_app || true
-          docker rm fastapi_app || true
-          docker run -d --name fastapi_app -p 80:80 ${{ secrets.DOCKER_USERNAME }}/fastapi_app:latest
+          docker pull ${{ secrets.DOCKER_USERNAME }}/ai-container:latest
+          docker stop ai-container || true
+          docker rm ai-container || true
+          docker run -d --name ai-container -p 80:80 ${{ secrets.DOCKER_USERNAME }}/ai-container:latest
         EOF
 
