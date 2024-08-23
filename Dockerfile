@@ -14,4 +14,4 @@ COPY ./templates /code/templates
 
 COPY ./main.py /code/main.py
 
-CMD [ "uvicorn", "main:app","--proxy-headers", "--host", "0.
+CMD [ "uvicorn", "main:app","--proxy-headers", "--host", "0.0.0.0", "--port","80" ]
