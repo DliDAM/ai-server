@@ -31,7 +31,7 @@ async def process_tts(text: str) -> bytes:
     # TTS 처리 (여기서는 단순히 바이너리 데이터를 반환하는 예시)
     # 실제로는 TTS 엔진을 사용하여 음성 데이터를 생성
     await asyncio.sleep(1)  # TTS 처리 시간 시뮬레이션
-    response = "dummy binary audio data"
+    response = b"dummy binary audio data"
     logger.info(f"Sending message: {response}")
     return b"dummy binary audio data"  # 추후 실제 음성 데이터로 대체
 
@@ -61,7 +61,9 @@ async def worker(websocket : WebSocket):
         if not text_queue.empty():
             text = text_queue.get()
             audio_data = await process_tts(text)
+            logger.info("----input----")
             await websocket.send_bytes(audio_data)
+            logger.info("----output-----")
         await asyncio.sleep(0.1)  # Queue가 비어있는지 확인하는 주기
 
 # ======= #
