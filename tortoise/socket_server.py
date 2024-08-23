@@ -46,7 +46,13 @@ def split_text(text, max_length=200):
 async def handle_client(websocket, path):
     try:
         async for message in websocket:
-            character_name, text = message.split('|', 1)
+            if '|' in message:
+                character_name, text = message.split('|', 1)
+            else:
+                # 기본값으로 처리
+                character_name = "deniro"  # 기본 캐릭터 이름 설정
+                text = message
+
             text_chunks = split_text(text, max_length=200)
             print(text_chunks)
             for chunk in text_chunks:
