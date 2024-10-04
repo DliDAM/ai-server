@@ -7,9 +7,10 @@ services:
       dockerfile: Dockerfile
     container_name: ai-container
     ports:
-      - "8000:80"
+      - "80:80"
     volumes:
       - .:/code
     environment:
       - ENVIRONMENT=production
-
+    env_file:
+      - .env

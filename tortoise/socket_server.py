@@ -1,6 +1,7 @@
 import asyncio
 import websockets
 import spacy
+import urllib.parse
 from tortoise.api_fast import TextToSpeech
 from tortoise.utils.audio import load_voices
 
@@ -45,16 +46,22 @@ def split_text(text, max_length=200):
 
 async def handle_client(websocket, path):
     try:
+        # URL에서 쿼리 파라미터 파싱
+        query_params = urllib.parse.parse_qs(urllib.parse.urlparse(path).query)
+        user_id = query_params.get('user_id', ['default'])[0]
+        
+        print(f"연결된 사용자: {user_id}")
+        
         async for message in websocket:
             if '|' in message:
                 character_name, text = message.split('|', 1)
             else:
-                # 기본값으로 처리
-                character_name = "deniro"  # 기본 캐릭터 이름 설정
+                # user_id를 character_name으로 사용
+                character_name = user_id
                 text = message
 
             text_chunks = split_text(text, max_length=200)
-            print(text_chunks)
+            print(f"사용자 {user_id}의 텍스트 청크: {text_chunks}")
             for chunk in text_chunks:
                 audio_stream = generate_audio_stream(chunk, tts, character_name)
 
@@ -65,12 +72,12 @@ async def handle_client(websocket, path):
             await websocket.send("END_OF_AUDIO")
 
     finally:
-        print("Client disconnected.")
+        print(f"사용자 {user_id} 연결 해제.")
 
 
 async def start_server():
     server = await websockets.serve(handle_client, "0.0.0.0", 90)
-    print("Server listening on port 90")
+    print("서버가 90번 포트에서 리스닝 중입니다.")
     await server.wait_closed()
 
 
