@@ -49,7 +49,7 @@ async def handle_client(websocket, path):
         async for data in websocket:
             try:
                 data = json.loads(data)
-                sender_id = data.get('sender_id')
+                sender_id = data.get('senderId')
                 message = data.get('message')
                 
                 if sender_id is not None:
