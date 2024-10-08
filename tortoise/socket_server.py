@@ -51,8 +51,10 @@ async def handle_client(websocket, path):
                 data = json.loads(data)
                 sender_id = data.get('sender_id')
                 message = data.get('message')
-                print(f"연결된 사용자: {sender_id}")
-                print(f"메시지: {message}")
+                
+                if sender_id is not None:
+                    print(f"연결된 사용자: {sender_id}")
+                    print(f"메시지: {message}")
                 
                 if '|' in message:
                     character_name, text = message.split('|', 1)
@@ -62,7 +64,7 @@ async def handle_client(websocket, path):
                     text = message
 
                 text_chunks = split_text(text, max_length=200)
-                print(f"사용자 {sender_id}의 텍스트 청크: {text_chunks}")
+                #print(f"사용자 {sender_id}의 텍스트 청크: {text_chunks}")
                 for chunk in text_chunks:
                     audio_stream = generate_audio_stream(chunk, tts, character_name)
 
