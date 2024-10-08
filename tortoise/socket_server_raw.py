@@ -42,7 +42,7 @@ def split_text(text, max_length=200):
 
     return chunks
 
-
+import torch
 async def handle_client(websocket, path):
     try:
         async for message in websocket:
@@ -59,13 +59,23 @@ async def handle_client(websocket, path):
                 audio_stream = generate_audio_stream(chunk, tts, character_name)
 
                 for audio_chunk in audio_stream:
-                    audio_data = audio_chunk.cpu().numpy().flatten()
-                    await websocket.send(audio_data.tobytes())
+                    # raw 데이터로 전송 (numpy 변환 제거)
+                    if isinstance(audio_chunk, torch.Tensor):
+                        # torch.Tensor인 경우 CPU로 이동한 후 numpy 변환하지 않고 그대로 전송
+                        raw_data = audio_chunk.cpu()
+                    elif isinstance(audio_chunk, np.ndarray):
+                        raw_data = audio_chunk
+                    else:
+                        # 그 외의 경우 적절한 형식으로 처리
+                        raise TypeError("Unsupported audio chunk type")
+
+                    await websocket.send(raw_data.tobytes())
 
             await websocket.send("END_OF_AUDIO")
 
     finally:
         print("Client disconnected.")
+
 
 
 async def start_server():
