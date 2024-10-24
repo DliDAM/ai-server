@@ -1,6 +1,8 @@
 import asyncio
 import websockets
-import argparse
+import soundfile as sf
+import numpy as np
+import os
 
 async def receive_and_save_audio(websocket, output_file):
     buffer = b''
@@ -19,13 +21,14 @@ async def receive_and_save_audio(websocket, output_file):
             # Accumulate the buffer
             buffer += chunk
 
-        # Write the raw byte data to a file
-        with open(output_file, 'wb') as file:
-            file.write(buffer)
-        
+        # Convert the buffer to a numpy array
+        audio_data = np.frombuffer(buffer, dtype=np.float32)
+
+        # Write the numpy array to a .wav file
+        sf.write(output_file, audio_data, 24000, format='WAV')
         print(f"Audio saved to {output_file}")
         print(f"Total chunks received: {total_chunks_received}")
-        print(f"Total audio length (bytes): {len(buffer)}")
+        print(f"Total audio length (samples): {len(audio_data)}")
 
     except Exception as e:
         print(f"Error receiving audio: {e}")
@@ -55,7 +58,7 @@ async def main(server_ip='localhost', server_port=5000):
             break
 
         # Generate a unique output file name
-        output_file = "output.raw"
+        output_file = f"output_{character_name}_{len(text)}.wav"
 
         # Send the text to the server
         await send_text_to_server(character_name, text, output_file, server_ip, server_port)
