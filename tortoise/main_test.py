@@ -132,11 +132,12 @@ async def websocket_endpoint(websocket: WebSocket):
                 # JSON 데이터에서 필요한 정보 추출
                 chat_room_id = data.get('chatRoomId')
                 sender_id = data.get('senderId')
+                voice_type = data.get('voiceType').lower()
                 message = data.get('message')
                 
                 # 필수 필드 확인
-                if not all([chat_room_id, sender_id, message]):
-                    raise ValueError("Missing required fields (chatRoomId, senderId, or message)")
+                if not all([chat_room_id, sender_id, voice_type, message]):
+                    raise ValueError("Missing required fields (chatRoomId, senderId, voice_type or message)")
 
                 # 첫 메시지인 경우 연결 저장
                 if sender_id not in manager.active_connections:
@@ -146,12 +147,16 @@ async def websocket_endpoint(websocket: WebSocket):
                 print(f"\n=== Text Message Received ===")
                 print(f"Sender ID: {sender_id}")
                 print(f"Message: {message}")
+                print(f"voice_type: {voice_type}")
                 print("===========================\n")
                 
                 if '|' in message:
                     character_name, text = message.split('|', 1)
                 else:
-                    character_name = "deniro"
+                    # voiceType : mine 인 경우 사용자 본인 목소리 가중치 사용
+                    # 사용자가 본인 목소리 서버에 전송하지 않은 이상 mine이 AI 서버에 전송될 일 없음
+                    # 추후 에러 처리 필요
+                    character_name = sender_id if os.path.isdir(os.path.join("tortoise/voices", sender_id)) else voice_type
                     text = message
                     
                 text_chunks = split_text(text, max_length=200)
