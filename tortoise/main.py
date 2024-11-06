@@ -119,6 +119,20 @@ class ConnectionManager:
 
 manager = ConnectionManager()
 
+def check_and_set_character_name(sender_id,voice_type):
+    voices_dir = os.path.join("tortoise/voices", sender_id)
+
+    if os.path.isdir(voices_dir):
+        character_name = sender_id
+    elif voice_type == 'male':
+        character_name = "deniro"
+    elif voice_type == 'female':
+        character_name = "emma"
+    else:
+        character_name = "deniro" # voice_type
+    # tortoise/voices 경로에 ROSE, GD, BRUNO,GRANDE 목소리 샘플 3가지 추가 후 voice_type으로 변경
+    return character_name
+
 # WebSocket 엔드포인트
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
@@ -146,6 +160,7 @@ async def websocket_endpoint(websocket: WebSocket):
                 # 텍스트 수신 로그
                 print(f"\n=== Text Message Received ===")
                 print(f"Sender ID: {sender_id}")
+                print(f"chat_room_id: {chat_room_id}")
                 print(f"Message: {message}")
                 print(f"voice_type: {voice_type}")
                 print("===========================\n")
@@ -156,7 +171,7 @@ async def websocket_endpoint(websocket: WebSocket):
                     # voiceType : mine 인 경우 사용자 본인 목소리 가중치 사용
                     # 사용자가 본인 목소리 서버에 전송하지 않은 이상 mine이 AI 서버에 전송될 일 없음
                     # 추후 에러 처리 필요
-                    character_name = "deniro" # sender_id if os.path.isdir(os.path.join("tortoise/voices", sender_id)) else voice_type
+                    character_name = check_and_set_character_name(sender_id, voice_type)
                     text = message
                     
                 text_chunks = split_text(text, max_length=200)
