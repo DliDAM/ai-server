@@ -4,7 +4,7 @@ import os
 import uuid
 import numpy as np
 from scipy.io import wavfile
-from fastapi import FastAPI, UploadFile, File, WebSocket
+from fastapi import FastAPI, UploadFile, File, WebSocket, Form
 import uvicorn
 from fastapi.middleware.cors import CORSMiddleware
 from tortoise.api_fast import TextToSpeech
@@ -55,25 +55,24 @@ def split_text(text, max_length=200):
         chunks.append(' '.join(chunk))
     return chunks
 
-# 파일 업로드 엔드포인트
-@app.post("/receive_audio_file/{sender_id}")
+@app.post("/receive_audio_file")
 async def receive_audio_file(
-        senderId: str,
+        senderId: str = Form(...),
         file: UploadFile = File(...)
         ):
     try:
         sender_id = senderId
         upload_dir = os.path.join("/home/ubuntu/ai-server/tortoise/tortoise/voices",sender_id)
         os.makedirs(upload_dir, exist_ok=True)
-        
+
         file_extension = os.path.splitext(file.filename)[1]
         unique_filename = f"{sender_id}_{uuid.uuid4()}{file_extension}"
         file_path = os.path.join(upload_dir, unique_filename)
-        
+
         with open(file_path, "wb") as buffer:
             content = await file.read()
             buffer.write(content)
-            
+
         return {
             "status": "success",
             "message": "File uploaded successfully",
@@ -93,48 +92,75 @@ class ConnectionManager:
     def __init__(self):
         self.active_connections: dict = {}
 
-    async def connect(self, websocket: WebSocket, client_id: str):
+    async def connect(self, websocket: WebSocket):
         await websocket.accept()
-        self.active_connections[client_id] = websocket
-        print(f"Client {client_id} connected. Total connections: {len(self.active_connections)}")
+        return websocket
 
-    def disconnect(self, client_id: str):
-        if client_id in self.active_connections:
-            del self.active_connections[client_id]
-            print(f"Client {client_id} disconnected. Total connections: {len(self.active_connections)}")
+    def store_connection(self, sender_id: str, websocket: WebSocket):
+        self.active_connections[sender_id] = websocket
+        print(f"\n=== WebSocket Connected ===")
+        print(f"Sender ID: {sender_id}")
+        print("=========================\n")
 
-    async def send_audio(self, client_id: str, audio_data: bytes):
-        if client_id in self.active_connections:
-            await self.active_connections[client_id].send_bytes(audio_data)
+    def disconnect(self, sender_id: str):
+        if sender_id in self.active_connections:
+            del self.active_connections[sender_id]
+            print(f"\n=== WebSocket Disconnected ===")
+            print(f"Sender ID: {sender_id}")
+            print("============================\n")
 
-    async def send_message(self, client_id: str, message: str):
-        if client_id in self.active_connections:
-            await self.active_connections[client_id].send_text(message)
+    async def send_audio(self, sender_id: str, audio_data: bytes):
+        if sender_id in self.active_connections:
+            await self.active_connections[sender_id].send_bytes(audio_data)
+
+    async def send_message(self, sender_id: str, message: str):
+        if sender_id in self.active_connections:
+            await self.active_connections[sender_id].send_text(message)
 
 manager = ConnectionManager()
 
 # WebSocket 엔드포인트
-@app.websocket("/ws/{client_id}")
-async def websocket_endpoint(websocket: WebSocket, client_id: str):
-    await manager.connect(websocket, client_id)
+@app.websocket("/ws")
+async def websocket_endpoint(websocket: WebSocket):
+    await manager.connect(websocket)
     try:
         while True:
             data = await websocket.receive_text()
             try:
                 data = json.loads(data)
+
+                # JSON 데이터에서 필요한 정보 추출
+                chat_room_id = data.get('chatRoomId')
+                sender_id = data.get('senderId')
+                voice_type = data.get('voiceType').lower()
                 message = data.get('message')
                 
-                print(f"연결된 사용자: {client_id}")
-                print(f"메시지: {message}")
+                # 필수 필드 확인
+                if not all([chat_room_id, sender_id, voice_type, message]):
+                    raise ValueError("Missing required fields (chatRoomId, senderId, voice_type or message)")
+
+                # 첫 메시지인 경우 연결 저장
+                if sender_id not in manager.active_connections:
+                    manager.store_connection(sender_id, websocket)
+
+                # 텍스트 수신 로그
+                print(f"\n=== Text Message Received ===")
+                print(f"Sender ID: {sender_id}")
+                print(f"Message: {message}")
+                print(f"voice_type: {voice_type}")
+                print("===========================\n")
                 
                 if '|' in message:
                     character_name, text = message.split('|', 1)
                 else:
-                    character_name = "deniro"
+                    # voiceType : mine 인 경우 사용자 본인 목소리 가중치 사용
+                    # 사용자가 본인 목소리 서버에 전송하지 않은 이상 mine이 AI 서버에 전송될 일 없음
+                    # 추후 에러 처리 필요
+                    character_name = "deniro" # sender_id if os.path.isdir(os.path.join("tortoise/voices", sender_id)) else voice_type
                     text = message
                     
                 text_chunks = split_text(text, max_length=200)
-                print(f"사용자 {client_id}의 텍스트 청크: {text_chunks}")
+                print(f"사용자 {sender_id}의 텍스트 청크: {text_chunks}")
                 
                 all_audio_data = []
                 for chunk in text_chunks:
@@ -143,21 +169,13 @@ async def websocket_endpoint(websocket: WebSocket, client_id: str):
                     for audio_chunk in audio_stream:
                         audio_data = audio_chunk.cpu().numpy().flatten()
                         chunk_audio_data.append(audio_data)
-                        await manager.send_audio(client_id, audio_data.tobytes())
+                        await manager.send_audio(sender_id, audio_data.tobytes())
                         
                     if chunk_audio_data:
                         combined_chunk = np.concatenate(chunk_audio_data)
                         all_audio_data.append(combined_chunk)
-                
-                if all_audio_data:
-                    complete_audio = np.concatenate(all_audio_data)
-                    os.makedirs("audio_files", exist_ok=True)
-                    file_name = f"{character_name}_{uuid.uuid4()}.wav"
-                    file_path = os.path.join("audio_files", file_name)
-                    wavfile.write(file_path, 24000, complete_audio)
-                    print(f"Audio saved to: {file_path}")
                     
-                await manager.send_message(client_id, "END_OF_AUDIO")
+                await manager.send_message(sender_id, "END_OF_AUDIO")
                 
             except json.JSONDecodeError:
                 print("잘못된 JSON 형식입니다.")
@@ -166,13 +184,8 @@ async def websocket_endpoint(websocket: WebSocket, client_id: str):
     except Exception as e:
         print(f"WebSocket 오류: {str(e)}")
     finally:
-        manager.disconnect(client_id)
+        if sender_id:
+            manager.disconnect(sender_id)
 
 if __name__ == "__main__":
-   # uvicorn.run(app, host="0.0.0.0", port=8000)
-   uvicorn.run(
-           app,
-           host="0.0.0.0",
-           port=8000,
-           log_level="info"
-           )
+    uvicorn.run(app, host="0.0.0.0", port=8000)
