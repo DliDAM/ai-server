@@ -55,7 +55,7 @@ async def main(server_ip='localhost', server_port=5000):
             break
 
         # Generate a unique output file name
-        output_file = "output.raw"
+        output_file = f"output_{character_name}_{len(text)}.raw"
 
         # Send the text to the server
         await send_text_to_server(character_name, text, output_file, server_ip, server_port)

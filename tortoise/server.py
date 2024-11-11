@@ -1,7 +1,6 @@
 import asyncio
 import websockets
 import spacy
-import json
 from tortoise.api_fast import TextToSpeech
 from tortoise.utils.audio import load_voices
 
@@ -46,46 +45,40 @@ def split_text(text, max_length=200):
 
 async def handle_client(websocket, path):
     try:
-        async for data in websocket:
-            try:
-                data = json.loads(data)
-                sender_id = data.get('senderId')
-                message = data.get('message')
-                
-                if sender_id is not None:
-                    print(f"연결된 사용자: {sender_id}")
-                    print(f"메시지: {message}")
-                
-                if '|' in message:
-                    character_name, text = message.split('|', 1)
-                else:
-                    # user_id를 character_name으로 사용
-                    character_name = str(sender_id)
-                    text = message
+        async for message in websocket:
+            if '|' in message:
+                character_name, text = message.split('|', 1)
+            else:
+                character_name = "deniro"  # 기본 캐릭터 이름 설정
+                text = message
 
-                text_chunks = split_text(text, max_length=200)
-                #print(f"사용자 {sender_id}의 텍스트 청크: {text_chunks}")
+            text_chunks = split_text(text, max_length=200)
+            print(text_chunks)
+
+            with open("server_output.wav", 'wb') as f:  # 서버에서 음성 저장
                 for chunk in text_chunks:
                     audio_stream = generate_audio_stream(chunk, tts, character_name)
 
                     for audio_chunk in audio_stream:
                         audio_data = audio_chunk.cpu().numpy().flatten()
-                        await websocket.send(audio_data.tobytes())
+                        f.write(audio_data.tobytes())  # 서버에서 받은 음성을 저장
 
-                await websocket.send("END_OF_AUDIO")
-            except json.JSONDecodeError:
-                print("잘못된 JSON 형식입니다.")
-            except KeyError as e:
-                print(f"필수 키가 누락되었습니다: {e}")
+            # 서버에서 생성된 파일을 클라이언트로 전송
+            with open("server_output.wav", 'rb') as audio_file:
+                await websocket.send(audio_file.read())
+
+            await websocket.send("END_OF_AUDIO")
+
     finally:
-        print(f"사용자 {sender_id} 연결 해제.")
+        print("Client disconnected.")
 
 
 async def start_server():
     server = await websockets.serve(handle_client, "0.0.0.0", 5000)
-    print("Server listening on port 5000")
+    print("Server listening on port 90")
     await server.wait_closed()
 
 
 if __name__ == "__main__":
     asyncio.run(start_server())
+
