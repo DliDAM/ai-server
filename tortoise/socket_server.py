@@ -1,6 +1,7 @@
 import asyncio
 import websockets
 import spacy
+import json
 from tortoise.api_fast import TextToSpeech
 from tortoise.utils.audio import load_voices
 
@@ -45,27 +46,39 @@ def split_text(text, max_length=200):
 
 async def handle_client(websocket, path):
     try:
-        async for message in websocket:
-            if '|' in message:
-                character_name, text = message.split('|', 1)
-            else:
-                # 기본값으로 처리
-                character_name = "deniro"  # 기본 캐릭터 이름 설정
-                text = message
+        async for data in websocket:
+            try:
+                data = json.loads(data)
+                sender_id = data.get('senderId')
+                message = data.get('message')
+                
+                if sender_id is not None:
+                    print(f"연결된 사용자: {sender_id}")
+                    print(f"메시지: {message}")
+                
+                if '|' in message:
+                    character_name, text = message.split('|', 1)
+                else:
+                    # user_id를 character_name으로 사용
+                    character_name = str(sender_id)
+                    text = message
 
-            text_chunks = split_text(text, max_length=200)
-            print(text_chunks)
-            for chunk in text_chunks:
-                audio_stream = generate_audio_stream(chunk, tts, character_name)
+                text_chunks = split_text(text, max_length=200)
+                #print(f"사용자 {sender_id}의 텍스트 청크: {text_chunks}")
+                for chunk in text_chunks:
+                    audio_stream = generate_audio_stream(chunk, tts, character_name)
 
-                for audio_chunk in audio_stream:
-                    audio_data = audio_chunk.cpu().numpy().flatten()
-                    await websocket.send(audio_data.tobytes())
+                    for audio_chunk in audio_stream:
+                        audio_data = audio_chunk.cpu().numpy().flatten()
+                        await websocket.send(audio_data.tobytes())
 
-            await websocket.send("END_OF_AUDIO")
-
+                await websocket.send("END_OF_AUDIO")
+            except json.JSONDecodeError:
+                print("잘못된 JSON 형식입니다.")
+            except KeyError as e:
+                print(f"필수 키가 누락되었습니다: {e}")
     finally:
-        print("Client disconnected.")
+        print(f"사용자 {sender_id} 연결 해제.")
 
 
 async def start_server():

@@ -32,10 +32,10 @@ DEFAULT_MODELS_DIR = os.path.join(os.path.expanduser('~'), '.cache', 'tortoise',
 MODELS_DIR = os.environ.get('TORTOISE_MODELS_DIR', DEFAULT_MODELS_DIR)
 
 MODELS = {
-    'autoregressive.pth': 'https://huggingface.co/Manmay/tortoise-tts/resolve/main/autoregressive.pth',
-    'classifier.pth': 'https://huggingface.co/Manmay/tortoise-tts/resolve/main/classifier.pth',
-    'rlg_auto.pth': 'https://huggingface.co/Manmay/tortoise-tts/resolve/main/rlg_auto.pth',
-    'hifidecoder.pth': 'https://huggingface.co/Manmay/tortoise-tts/resolve/main/hifidecoder.pth',
+    'autoregressive.pth': 'https://huggingface.co/doammii/tortoise-tts-v2/resolve/main/3420_gpt.pth',
+    'classifier.pth': 'https://huggingface.co/doammii/tortoise-tts-v2/resolve/main/3420_gpt.pth',
+    'rlg_auto.pth': 'https://huggingface.co/doammii/tortoise-tts-v2/resolve/main/3420_gpt.pthh',
+    'hifidecoder.pth': 'https://huggingface.co/doammii/tortoise-tts-v2/resolve/main/3420_gpt.pth',
 }
 
 def get_model_path(model_name, models_dir=MODELS_DIR):
