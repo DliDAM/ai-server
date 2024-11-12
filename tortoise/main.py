@@ -129,7 +129,7 @@ def check_and_set_character_name(sender_id,voice_type):
     elif voice_type == 'female':
         character_name = "emma"
     else:
-        character_name = "deniro" # voice_type
+        character_name = voice_type
     # tortoise/voices 경로에 ROSE, GD, BRUNO,GRANDE 목소리 샘플 3가지 추가 후 voice_type으로 변경
     return character_name
 
