@@ -36,8 +36,9 @@ python main.py
 ```
 
 ### 4. 사용한 TTS 모델 및 한국어 Fine-tuning 방법
-[![TorToise-tts](https://github.com/user-attachments/assets/b0af087d-ccd9-4579-9c6d-56051faae4d6)](https://github.com/neonbjb/tortoise-tts)
-- Tortoise-tts
+<img width="150" alt="TorToise-tts" src="https://github.com/user-attachments/assets/46e95b8e-9bc2-473d-b1bb-b89841d4658b">
+
+- [Tortoise-tts](https://github.com/neonbjb/tortoise-tts)
     - Multi-voice가 가능하고, 실제같은 prosody & intonation을 제공하는 TTS 프로그램
     - Autoregressive transformer & DDPM 기반의 이미지 생성 원리를 TTS에 적용(Joining Autoregressive Decoders & DDPM)
         - Autoregressive decoder: 텍스트에 따라 음성 토큰의 확률 분포 예측
